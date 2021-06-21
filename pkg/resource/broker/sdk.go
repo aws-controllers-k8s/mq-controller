@@ -289,6 +289,9 @@ func (rm *resourceManager) sdkFind(
 	}
 
 	rm.setStatusDefaults(ko)
+	if brokerCreateInProgress(&resource{ko}) {
+		return &resource{ko}, requeueWaitWhileCreating
+	}
 	return &resource{ko}, nil
 }
 
@@ -587,6 +590,9 @@ func (rm *resourceManager) sdkUpdate(
 	// Merge in the information we read from the API call above to the copy of
 	// the original Kubernetes object we passed to the function
 	ko := desired.ko.DeepCopy()
+	// Copy status from latest observed state
+	latestKOStatus := latest.ko.DeepCopy().Status
+	ko.Status = latestKOStatus
 
 	if resp.BrokerId != nil {
 		ko.Status.BrokerID = resp.BrokerId
