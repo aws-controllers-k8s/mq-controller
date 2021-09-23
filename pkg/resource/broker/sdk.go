@@ -811,7 +811,7 @@ func (rm *resourceManager) sdkDelete(
 	exit := rlog.Trace("rm.sdkDelete")
 	defer exit(err)
 	if brokerDeleteInProgress(r) {
-		return requeueWaitWhileDeleting
+		return r, requeueWaitWhileDeleting
 	}
 
 	input, err := rm.newDeleteRequestPayload(r)
