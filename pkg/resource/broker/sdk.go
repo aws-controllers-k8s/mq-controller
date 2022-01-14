@@ -532,7 +532,13 @@ func (rm *resourceManager) newCreateRequestPayload(
 				f18elem.SetGroups(f18elemf1)
 			}
 			if f18iter.Password != nil {
-				f18elem.SetPassword(*f18iter.Password)
+				tmpSecret, err := rm.rr.SecretValueFromReference(ctx, f18iter.Password)
+				if err != nil {
+					return nil, err
+				}
+				if tmpSecret != "" {
+					f18elem.SetPassword(tmpSecret)
+				}
 			}
 			if f18iter.Username != nil {
 				f18elem.SetUsername(*f18iter.Username)
