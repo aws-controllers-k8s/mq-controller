@@ -82,6 +82,20 @@ func newResourceDelta(
 			delta.Add("Spec.CreatorRequestID", a.ko.Spec.CreatorRequestID, b.ko.Spec.CreatorRequestID)
 		}
 	}
+	if ackcompare.HasNilDifference(a.ko.Spec.DataReplicationMode, b.ko.Spec.DataReplicationMode) {
+		delta.Add("Spec.DataReplicationMode", a.ko.Spec.DataReplicationMode, b.ko.Spec.DataReplicationMode)
+	} else if a.ko.Spec.DataReplicationMode != nil && b.ko.Spec.DataReplicationMode != nil {
+		if *a.ko.Spec.DataReplicationMode != *b.ko.Spec.DataReplicationMode {
+			delta.Add("Spec.DataReplicationMode", a.ko.Spec.DataReplicationMode, b.ko.Spec.DataReplicationMode)
+		}
+	}
+	if ackcompare.HasNilDifference(a.ko.Spec.DataReplicationPrimaryBrokerARN, b.ko.Spec.DataReplicationPrimaryBrokerARN) {
+		delta.Add("Spec.DataReplicationPrimaryBrokerARN", a.ko.Spec.DataReplicationPrimaryBrokerARN, b.ko.Spec.DataReplicationPrimaryBrokerARN)
+	} else if a.ko.Spec.DataReplicationPrimaryBrokerARN != nil && b.ko.Spec.DataReplicationPrimaryBrokerARN != nil {
+		if *a.ko.Spec.DataReplicationPrimaryBrokerARN != *b.ko.Spec.DataReplicationPrimaryBrokerARN {
+			delta.Add("Spec.DataReplicationPrimaryBrokerARN", a.ko.Spec.DataReplicationPrimaryBrokerARN, b.ko.Spec.DataReplicationPrimaryBrokerARN)
+		}
+	}
 	if ackcompare.HasNilDifference(a.ko.Spec.DeploymentMode, b.ko.Spec.DeploymentMode) {
 		delta.Add("Spec.DeploymentMode", a.ko.Spec.DeploymentMode, b.ko.Spec.DeploymentMode)
 	} else if a.ko.Spec.DeploymentMode != nil && b.ko.Spec.DeploymentMode != nil {
