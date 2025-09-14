@@ -50,7 +50,7 @@ var (
 // +kubebuilder:rbac:groups=mq.services.k8s.aws,resources=brokers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=mq.services.k8s.aws,resources=brokers/status,verbs=get;update;patch
 
-var lateInitializeFieldNames = []string{}
+var lateInitializeFieldNames = []string{"AuthenticationStrategy", "AutoMinorVersionUpgrade", "Configuration", "EncryptionOptions", "EngineVersion", "LDAPServerMetadata", "Logs", "MaintenanceWindowStartTime", "PubliclyAccessible", "SecurityGroups", "StorageType", "SubnetIDs"}
 
 // resourceManager is responsible for providing a consistent way to perform
 // CRUD operations in a backend AWS service API for Book custom resources.
@@ -248,6 +248,40 @@ func (rm *resourceManager) LateInitialize(
 func (rm *resourceManager) incompleteLateInitialization(
 	res acktypes.AWSResource,
 ) bool {
+	ko := rm.concreteResource(res).ko.DeepCopy()
+	if ko.Spec.AuthenticationStrategy == nil {
+		return true
+	}
+	if ko.Spec.AutoMinorVersionUpgrade == nil {
+		return true
+	}
+	if ko.Spec.Configuration == nil {
+		return true
+	}
+	if ko.Spec.EncryptionOptions == nil {
+		return true
+	}
+	if ko.Spec.EngineVersion == nil {
+		return true
+	}
+	if ko.Spec.Logs == nil {
+		return true
+	}
+	if ko.Spec.MaintenanceWindowStartTime == nil {
+		return true
+	}
+	if ko.Spec.PubliclyAccessible == nil {
+		return true
+	}
+	if ko.Spec.SecurityGroups == nil {
+		return true
+	}
+	if ko.Spec.StorageType == nil {
+		return true
+	}
+	if ko.Spec.SubnetIDs == nil {
+		return true
+	}
 	return false
 }
 
@@ -257,7 +291,45 @@ func (rm *resourceManager) lateInitializeFromReadOneOutput(
 	observed acktypes.AWSResource,
 	latest acktypes.AWSResource,
 ) acktypes.AWSResource {
-	return latest
+	observedKo := rm.concreteResource(observed).ko.DeepCopy()
+	latestKo := rm.concreteResource(latest).ko.DeepCopy()
+	if observedKo.Spec.AuthenticationStrategy != nil && latestKo.Spec.AuthenticationStrategy == nil {
+		latestKo.Spec.AuthenticationStrategy = observedKo.Spec.AuthenticationStrategy
+	}
+	if observedKo.Spec.AutoMinorVersionUpgrade != nil && latestKo.Spec.AutoMinorVersionUpgrade == nil {
+		latestKo.Spec.AutoMinorVersionUpgrade = observedKo.Spec.AutoMinorVersionUpgrade
+	}
+	if observedKo.Spec.Configuration != nil && latestKo.Spec.Configuration == nil {
+		latestKo.Spec.Configuration = observedKo.Spec.Configuration
+	}
+	if observedKo.Spec.EncryptionOptions != nil && latestKo.Spec.EncryptionOptions == nil {
+		latestKo.Spec.EncryptionOptions = observedKo.Spec.EncryptionOptions
+	}
+	if observedKo.Spec.EngineVersion != nil && latestKo.Spec.EngineVersion == nil {
+		latestKo.Spec.EngineVersion = observedKo.Spec.EngineVersion
+	}
+	if observedKo.Spec.LDAPServerMetadata != nil && latestKo.Spec.LDAPServerMetadata == nil {
+		latestKo.Spec.LDAPServerMetadata = observedKo.Spec.LDAPServerMetadata
+	}
+	if observedKo.Spec.Logs != nil && latestKo.Spec.Logs == nil {
+		latestKo.Spec.Logs = observedKo.Spec.Logs
+	}
+	if observedKo.Spec.MaintenanceWindowStartTime != nil && latestKo.Spec.MaintenanceWindowStartTime == nil {
+		latestKo.Spec.MaintenanceWindowStartTime = observedKo.Spec.MaintenanceWindowStartTime
+	}
+	if observedKo.Spec.PubliclyAccessible != nil && latestKo.Spec.PubliclyAccessible == nil {
+		latestKo.Spec.PubliclyAccessible = observedKo.Spec.PubliclyAccessible
+	}
+	if observedKo.Spec.SecurityGroups != nil && latestKo.Spec.SecurityGroups == nil {
+		latestKo.Spec.SecurityGroups = observedKo.Spec.SecurityGroups
+	}
+	if observedKo.Spec.StorageType != nil && latestKo.Spec.StorageType == nil {
+		latestKo.Spec.StorageType = observedKo.Spec.StorageType
+	}
+	if observedKo.Spec.SubnetIDs != nil && latestKo.Spec.SubnetIDs == nil {
+		latestKo.Spec.SubnetIDs = observedKo.Spec.SubnetIDs
+	}
+	return &resource{latestKo}
 }
 
 // IsSynced returns true if the resource is synced.

@@ -22,17 +22,27 @@ resources:
         CreateBroker:
           input_fields:
             BrokerName: Name
+
+    update_operation:
+      omit_unchanged_fields: true
+      # UpdateBroker API returns nil for values not set in the request.
+      only_set_unchanged_fields: true
     fields:
-      securityGroups:
+      SecurityGroups:
+        late_initialize: {}
         references:
           service_name: ec2
           resource: SecurityGroup
           path: Status.ID
       SubnetIDs:
+        late_initialize: {}
         references:
           service_name: ec2
           resource: Subnet
           path: Status.SubnetID
+        set:
+          - method: Update
+            ignore: true
       BrokerState:
         from:
           operation: DescribeBroker
@@ -54,3 +64,29 @@ resources:
           is_ignored: true
       Users.Password:
         is_secret: true
+      AuthenticationStrategy:
+        late_initialize: {}
+      AutoMinorVersionUpgrade:
+        late_initialize: {}
+      EngineVersion:
+        late_initialize: {}
+        set:
+          - method: Update
+            ignore: true
+      MaintenanceWindowStartTime:
+        late_initialize: {}
+      Configuration:  
+        late_initialize: {}
+      EncryptionOptions:
+        late_initialize: {}
+      StorageType:
+        late_initialize: {}
+      PubliclyAccessible:
+        late_initialize: {}
+      Logs:
+        late_initialize: {}
+      LDAPServerMetadata:
+        late_initialize: {
+          # LDAP Server Metadata is only available for ActiveMQ brokers
+          skip_incomplete_check: {}
+        }
