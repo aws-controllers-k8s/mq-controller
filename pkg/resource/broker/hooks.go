@@ -14,6 +14,8 @@
 package broker
 
 import (
+	"strings"
+
 	svcapitypes "github.com/aws-controllers-k8s/mq-controller/apis/v1alpha1"
 )
 
@@ -45,4 +47,15 @@ func brokerDeleteInProgress(r *resource) bool {
 	}
 	bs := *r.ko.Status.BrokerState
 	return bs == string(svcapitypes.BrokerState_DELETION_IN_PROGRESS)
+}
+
+// MQ does not allow patch version to be set.
+// For the purposes of comparison we should consider only the minor version.
+func reconcileEngineVersion(
+	a *resource,
+	b *resource,
+) {
+	if a != nil && b != nil && a.ko.Spec.EngineVersion != nil && b.ko.Spec.EngineVersion != nil && strings.HasPrefix(*b.ko.Spec.EngineVersion, *a.ko.Spec.EngineVersion) {
+		a.ko.Spec.EngineVersion = b.ko.Spec.EngineVersion
+	}
 }
