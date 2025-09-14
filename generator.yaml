@@ -77,8 +77,6 @@ resources:
             ignore: true
       MaintenanceWindowStartTime:
         late_initialize: {}
-      Configuration:  
-        late_initialize: {}
       EncryptionOptions:
         late_initialize: {}
       StorageType:

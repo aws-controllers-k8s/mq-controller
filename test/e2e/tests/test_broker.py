@@ -23,6 +23,7 @@ from typing import Dict
 
 from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
+from acktest.k8s import condition
 
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_mq_resource
@@ -132,6 +133,10 @@ class TestRabbitMQBroker:
             CREATE_INTERVAL_SLEEP_SECONDS,
             45,
         )
+
+        # Verify that the ACK resource has successfully synced
+        condition.assert_synced(ref)
+
 
         # At this point, there should be at least one BrokerInstance record in
         # the Broker.Status.BrokerInstances collection which we can grab an

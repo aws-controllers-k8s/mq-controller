@@ -50,7 +50,7 @@ var (
 // +kubebuilder:rbac:groups=mq.services.k8s.aws,resources=brokers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=mq.services.k8s.aws,resources=brokers/status,verbs=get;update;patch
 
-var lateInitializeFieldNames = []string{"AuthenticationStrategy", "AutoMinorVersionUpgrade", "Configuration", "EncryptionOptions", "EngineVersion", "LDAPServerMetadata", "Logs", "MaintenanceWindowStartTime", "PubliclyAccessible", "SecurityGroups", "StorageType", "SubnetIDs"}
+var lateInitializeFieldNames = []string{"AuthenticationStrategy", "AutoMinorVersionUpgrade", "EncryptionOptions", "EngineVersion", "LDAPServerMetadata", "Logs", "MaintenanceWindowStartTime", "PubliclyAccessible", "SecurityGroups", "StorageType", "SubnetIDs"}
 
 // resourceManager is responsible for providing a consistent way to perform
 // CRUD operations in a backend AWS service API for Book custom resources.
@@ -255,9 +255,6 @@ func (rm *resourceManager) incompleteLateInitialization(
 	if ko.Spec.AutoMinorVersionUpgrade == nil {
 		return true
 	}
-	if ko.Spec.Configuration == nil {
-		return true
-	}
 	if ko.Spec.EncryptionOptions == nil {
 		return true
 	}
@@ -298,9 +295,6 @@ func (rm *resourceManager) lateInitializeFromReadOneOutput(
 	}
 	if observedKo.Spec.AutoMinorVersionUpgrade != nil && latestKo.Spec.AutoMinorVersionUpgrade == nil {
 		latestKo.Spec.AutoMinorVersionUpgrade = observedKo.Spec.AutoMinorVersionUpgrade
-	}
-	if observedKo.Spec.Configuration != nil && latestKo.Spec.Configuration == nil {
-		latestKo.Spec.Configuration = observedKo.Spec.Configuration
 	}
 	if observedKo.Spec.EncryptionOptions != nil && latestKo.Spec.EncryptionOptions == nil {
 		latestKo.Spec.EncryptionOptions = observedKo.Spec.EncryptionOptions
