@@ -23,7 +23,7 @@ from e2e import bootstrap_directory
 
 @dataclass
 class BootstrapResources(Resources):
-    pass
+    BrokerVpc: VPC
 
 _bootstrap_resources = None
 

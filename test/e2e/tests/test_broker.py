@@ -48,6 +48,23 @@ CREATE_TIMEOUT_SECONDS = 900
 def amq_client():
     return boto3.client('mq')
 
+def wait_till_deleted(broker_id: str):
+    amq_client = boto3.client('mq')
+    now = datetime.datetime.now()
+    timeout = now + datetime.timedelta(seconds=DELETE_TIMEOUT_SECONDS)
+
+    while True:
+        if datetime.datetime.now() >= timeout:
+            pytest.fail("Timed out waiting for ES Domain to being deleted in AES API")
+        time.sleep(DELETE_WAIT_INTERVAL_SLEEP_SECONDS)
+
+        try:
+            aws_res = amq_client.describe_broker(BrokerId=broker_id)
+            if aws_res['BrokerState'] != "DELETION_IN_PROGRESS":
+                pytest.fail("BrokerState is not DELETION_IN_PROGRESS for broker that was deleted. BrokerState is "+aws_res['BrokerState'])
+        except amq_client.exceptions.NotFoundException:
+            break
+
 
 #TODO(a-hilaly): Move to test-infra
 def wait_for_cr_status(
@@ -86,10 +103,86 @@ def admin_user_pass_secret():
     yield ns, name, key
     k8s.delete_secret(ns, name)
 
+@pytest.fixture(scope="module")
+def test_broker_with_security_group(admin_user_pass_secret):
+    resource_name = random_suffix_name("rabbitmq-security-group", 32)
+    aup_sec_ns, aup_sec_name, aup_sec_key = admin_user_pass_secret
+    broker_vpc = get_bootstrap_resources().BrokerVpc
+    subnet_id = broker_vpc.private_subnets.subnet_ids[0]
+    security_group_id = broker_vpc.security_group.group_id
+
+
+    replacements = REPLACEMENT_VALUES.copy()
+    replacements["BROKER_NAME"] = resource_name
+    replacements["ADMIN_USER_PASS_SECRET_NAMESPACE"] = aup_sec_ns
+    replacements["ADMIN_USER_PASS_SECRET_NAME"] = aup_sec_name
+    replacements["ADMIN_USER_PASS_SECRET_KEY"] = aup_sec_key
+    replacements["SUBNET_ID"] = subnet_id
+    replacements["SECURITY_GROUP_ID"] = security_group_id
+
+    resource_data = load_mq_resource(
+        "rabbitmq_security_group",
+        additional_replacements=replacements,
+    )
+    logging.error(resource_data)
+
+    # Create the k8s resource
+    ref = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
+        resource_name, namespace="default",
+    )
+    k8s.create_custom_resource(ref, resource_data)
+    cr = k8s.wait_resource_consumed_by_controller(ref)
+
+
+    assert cr is not None
+    broker_id = cr['status']['brokerID']
+
+    yield ref, cr, broker_id, security_group_id
+
+    try:
+        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
+        assert deleted
+        time.sleep(DELETE_WAIT_AFTER_SECONDS)
+    except:
+        pass
+
+    wait_till_deleted(broker_id)
+
+    
+
 
 @service_marker
 @pytest.mark.canary
 class TestRabbitMQBroker:
+    def test_rabbitmq_nondefault_security_group(self, amq_client, test_broker_with_security_group):
+        ref, cr, broker_id, security_group_id = test_broker_with_security_group
+        # Let's check that the Broker appears in AmazonMQ
+        aws_res = amq_client.describe_broker(BrokerId=broker_id)
+        assert aws_res is not None
+
+        wait_for_cr_status(
+            ref,
+            "brokerState",
+            "RUNNING",
+            CREATE_INTERVAL_SLEEP_SECONDS,
+            45,
+        )
+
+        # Verify that the ACK resource has successfully synced
+        condition.assert_synced(ref)
+
+        latest_res = k8s.get_resource(ref)
+        assert len(latest_res['spec']['securityGroups']) == 1
+        assert latest_res['spec']['securityGroups'][0] == security_group_id
+
+        broker = amq_client.describe_broker(BrokerId=broker_id)
+        assert broker['SecurityGroups'] is not None
+        assert len(broker['SecurityGroups']) == 1
+        assert broker['SecurityGroups'][0] == security_group_id
+
+
+
     def test_create_delete_non_public(
             self,
             amq_client,
@@ -148,21 +241,7 @@ class TestRabbitMQBroker:
 
         # Delete the k8s resource on teardown of the module
         k8s.delete_custom_resource(ref)
-
         time.sleep(DELETE_WAIT_AFTER_SECONDS)
+        wait_till_deleted(broker_id)
 
-        now = datetime.datetime.now()
-        timeout = now + datetime.timedelta(seconds=DELETE_TIMEOUT_SECONDS)
 
-        # Broker should no longer appear in AmazonMQ
-        while True:
-            if datetime.datetime.now() >= timeout:
-                pytest.fail("Timed out waiting for ES Domain to being deleted in AES API")
-            time.sleep(DELETE_WAIT_INTERVAL_SLEEP_SECONDS)
-
-            try:
-                aws_res = amq_client.describe_broker(BrokerId=broker_id)
-                if aws_res['BrokerState'] != "DELETION_IN_PROGRESS":
-                    pytest.fail("BrokerState is not DELETION_IN_PROGRESS for broker that was deleted. BrokerState is "+aws_res['BrokerState'])
-            except amq_client.exceptions.NotFoundException:
-                break

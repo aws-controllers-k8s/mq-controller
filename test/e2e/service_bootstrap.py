@@ -16,6 +16,7 @@
 import logging
 from time import sleep
 
+from acktest.bootstrapping import BootstrapFailureException
 from acktest.bootstrapping.vpc import VPC
 from e2e import bootstrap_directory
 from e2e.bootstrap_resources import BootstrapResources
@@ -23,7 +24,15 @@ from e2e.bootstrap_resources import BootstrapResources
 def service_bootstrap() -> dict:
     logging.getLogger().setLevel(logging.INFO)
 
-    resources = BootstrapResources()
+    resources = BootstrapResources(
+        BrokerVpc=VPC("broker-vpc", num_private_subnet=1)
+    )
+
+    try:
+        resources.bootstrap()
+    except BootstrapFailureException as ex:
+        exit(254)
+
     return resources
 
 if __name__ == "__main__":

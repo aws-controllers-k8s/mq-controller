@@ -1,0 +1,26 @@
+apiVersion: mq.services.k8s.aws/v1alpha1
+kind: Broker
+metadata:
+  name: $BROKER_NAME
+spec:
+  name: $BROKER_NAME
+  autoMinorVersionUpgrade: true
+  deploymentMode: SINGLE_INSTANCE
+  engineType: RabbitMQ
+  engineVersion: "$MQ_RABBITMQ_ENGINE_VERSION"
+  hostInstanceType: $MQ_HOST_INSTANCE_TYPE
+  publiclyAccessible: false
+  securityGroups:
+    - $SECURITY_GROUP_ID
+  subnetIDs:
+    - $SUBNET_ID
+  users:
+    - password:
+        namespace: $ADMIN_USER_PASS_SECRET_NAMESPACE
+        name: $ADMIN_USER_PASS_SECRET_NAME
+        key: $ADMIN_USER_PASS_SECRET_KEY
+      groups: []
+      consoleAccess: true
+      username: admin
+  tags:
+    key1: value1
