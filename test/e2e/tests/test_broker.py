@@ -163,7 +163,7 @@ def test_broker_with_security_group(admin_user_pass_secret):
     replacements["SECURITY_GROUP_ID"] = security_group_id
 
     resource_data = load_mq_resource(
-        "rabbitmq_security_group",
+        "broker_rabbitmq_security_group",
         additional_replacements=replacements,
     )
     logging.error(resource_data)
