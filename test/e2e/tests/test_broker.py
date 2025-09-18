@@ -98,7 +98,7 @@ def wait_for_cr_status(
 @pytest.fixture(scope="module")
 def admin_user_pass_secret():
     ns = "default"
-    name = "dbsecrets"
+    name = random_suffix_name("dbsecrets", 24)
     key = "admin_user_password"
     secret_val = "adminpassneeds12chars"
     k8s.create_opaque_secret(ns, name, key, secret_val)
