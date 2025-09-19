@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/aws-controllers-k8s/ec2-controller v0.0.21
-	github.com/aws-controllers-k8s/runtime v0.51.0
+	github.com/aws-controllers-k8s/runtime v0.52.0
 	github.com/aws/aws-sdk-go v1.49.0
 	github.com/aws/aws-sdk-go-v2 v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/mq v1.27.13
