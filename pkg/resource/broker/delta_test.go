@@ -46,6 +46,12 @@ func TestNewResourceDelta_EngineVersionPrefix(t *testing.T) {
 			expectDelta:    false,
 		},
 		{
+			name:           "different patch versions - no delta expected",
+			aEngineVersion: aws.String("3.13.2"),
+			bEngineVersion: aws.String("3.13.1"),
+			expectDelta:    true,
+		},
+		{
 			name:           "different minor versions - delta expected",
 			aEngineVersion: aws.String("3.13"),
 			bEngineVersion: aws.String("3.14.1"),
