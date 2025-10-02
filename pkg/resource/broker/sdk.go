@@ -558,111 +558,122 @@ func (rm *resourceManager) sdkUpdate(
 	latestKOStatus := latest.ko.DeepCopy().Status
 	ko.Status = latestKOStatus
 
-	if resp.AuthenticationStrategy != "" {
-		ko.Spec.AuthenticationStrategy = aws.String(string(resp.AuthenticationStrategy))
-	} else {
-		ko.Spec.AuthenticationStrategy = nil
+	if delta.DifferentAt("Spec.AuthenticationStrategy") {
+		if resp.AuthenticationStrategy != "" {
+			ko.Spec.AuthenticationStrategy = aws.String(string(resp.AuthenticationStrategy))
+		} else {
+			ko.Spec.AuthenticationStrategy = nil
+		}
 	}
-	if resp.AutoMinorVersionUpgrade != nil {
-		ko.Spec.AutoMinorVersionUpgrade = resp.AutoMinorVersionUpgrade
-	} else {
-		ko.Spec.AutoMinorVersionUpgrade = nil
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") {
+		if resp.AutoMinorVersionUpgrade != nil {
+			ko.Spec.AutoMinorVersionUpgrade = resp.AutoMinorVersionUpgrade
+		} else {
+			ko.Spec.AutoMinorVersionUpgrade = nil
+		}
 	}
 	if resp.BrokerId != nil {
 		ko.Status.BrokerID = resp.BrokerId
 	} else {
 		ko.Status.BrokerID = nil
 	}
-	if resp.Configuration != nil {
-		f3 := &svcapitypes.ConfigurationID{}
-		if resp.Configuration.Id != nil {
-			f3.ID = resp.Configuration.Id
+	if delta.DifferentAt("Spec.Configuration") {
+		if resp.Configuration != nil {
+			f3 := &svcapitypes.ConfigurationID{}
+			if resp.Configuration.Id != nil {
+				f3.ID = resp.Configuration.Id
+			}
+			if resp.Configuration.Revision != nil {
+				revisionCopy := int64(*resp.Configuration.Revision)
+				f3.Revision = &revisionCopy
+			}
+			ko.Spec.Configuration = f3
+		} else {
+			ko.Spec.Configuration = nil
 		}
-		if resp.Configuration.Revision != nil {
-			revisionCopy := int64(*resp.Configuration.Revision)
-			f3.Revision = &revisionCopy
-		}
-		ko.Spec.Configuration = f3
-	} else {
-		ko.Spec.Configuration = nil
 	}
-	if resp.EngineVersion != nil {
-		ko.Spec.EngineVersion = resp.EngineVersion
-	} else {
-		ko.Spec.EngineVersion = nil
+	if delta.DifferentAt("Spec.HostInstanceType") {
+		if resp.HostInstanceType != nil {
+			ko.Spec.HostInstanceType = resp.HostInstanceType
+		} else {
+			ko.Spec.HostInstanceType = nil
+		}
 	}
-	if resp.HostInstanceType != nil {
-		ko.Spec.HostInstanceType = resp.HostInstanceType
-	} else {
-		ko.Spec.HostInstanceType = nil
+	if delta.DifferentAt("Spec.LDAPServerMetadata") {
+		if resp.LdapServerMetadata != nil {
+			f8 := &svcapitypes.LDAPServerMetadataInput{}
+			if resp.LdapServerMetadata.Hosts != nil {
+				f8.Hosts = aws.StringSlice(resp.LdapServerMetadata.Hosts)
+			}
+			if resp.LdapServerMetadata.RoleBase != nil {
+				f8.RoleBase = resp.LdapServerMetadata.RoleBase
+			}
+			if resp.LdapServerMetadata.RoleName != nil {
+				f8.RoleName = resp.LdapServerMetadata.RoleName
+			}
+			if resp.LdapServerMetadata.RoleSearchMatching != nil {
+				f8.RoleSearchMatching = resp.LdapServerMetadata.RoleSearchMatching
+			}
+			if resp.LdapServerMetadata.RoleSearchSubtree != nil {
+				f8.RoleSearchSubtree = resp.LdapServerMetadata.RoleSearchSubtree
+			}
+			if resp.LdapServerMetadata.ServiceAccountUsername != nil {
+				f8.ServiceAccountUsername = resp.LdapServerMetadata.ServiceAccountUsername
+			}
+			if resp.LdapServerMetadata.UserBase != nil {
+				f8.UserBase = resp.LdapServerMetadata.UserBase
+			}
+			if resp.LdapServerMetadata.UserRoleName != nil {
+				f8.UserRoleName = resp.LdapServerMetadata.UserRoleName
+			}
+			if resp.LdapServerMetadata.UserSearchMatching != nil {
+				f8.UserSearchMatching = resp.LdapServerMetadata.UserSearchMatching
+			}
+			if resp.LdapServerMetadata.UserSearchSubtree != nil {
+				f8.UserSearchSubtree = resp.LdapServerMetadata.UserSearchSubtree
+			}
+			ko.Spec.LDAPServerMetadata = f8
+		} else {
+			ko.Spec.LDAPServerMetadata = nil
+		}
 	}
-	if resp.LdapServerMetadata != nil {
-		f8 := &svcapitypes.LDAPServerMetadataInput{}
-		if resp.LdapServerMetadata.Hosts != nil {
-			f8.Hosts = aws.StringSlice(resp.LdapServerMetadata.Hosts)
+	if delta.DifferentAt("Spec.Logs") {
+		if resp.Logs != nil {
+			f9 := &svcapitypes.Logs{}
+			if resp.Logs.Audit != nil {
+				f9.Audit = resp.Logs.Audit
+			}
+			if resp.Logs.General != nil {
+				f9.General = resp.Logs.General
+			}
+			ko.Spec.Logs = f9
+		} else {
+			ko.Spec.Logs = nil
 		}
-		if resp.LdapServerMetadata.RoleBase != nil {
-			f8.RoleBase = resp.LdapServerMetadata.RoleBase
-		}
-		if resp.LdapServerMetadata.RoleName != nil {
-			f8.RoleName = resp.LdapServerMetadata.RoleName
-		}
-		if resp.LdapServerMetadata.RoleSearchMatching != nil {
-			f8.RoleSearchMatching = resp.LdapServerMetadata.RoleSearchMatching
-		}
-		if resp.LdapServerMetadata.RoleSearchSubtree != nil {
-			f8.RoleSearchSubtree = resp.LdapServerMetadata.RoleSearchSubtree
-		}
-		if resp.LdapServerMetadata.ServiceAccountUsername != nil {
-			f8.ServiceAccountUsername = resp.LdapServerMetadata.ServiceAccountUsername
-		}
-		if resp.LdapServerMetadata.UserBase != nil {
-			f8.UserBase = resp.LdapServerMetadata.UserBase
-		}
-		if resp.LdapServerMetadata.UserRoleName != nil {
-			f8.UserRoleName = resp.LdapServerMetadata.UserRoleName
-		}
-		if resp.LdapServerMetadata.UserSearchMatching != nil {
-			f8.UserSearchMatching = resp.LdapServerMetadata.UserSearchMatching
-		}
-		if resp.LdapServerMetadata.UserSearchSubtree != nil {
-			f8.UserSearchSubtree = resp.LdapServerMetadata.UserSearchSubtree
-		}
-		ko.Spec.LDAPServerMetadata = f8
-	} else {
-		ko.Spec.LDAPServerMetadata = nil
 	}
-	if resp.Logs != nil {
-		f9 := &svcapitypes.Logs{}
-		if resp.Logs.Audit != nil {
-			f9.Audit = resp.Logs.Audit
+	if delta.DifferentAt("Spec.MaintenanceWindowStartTime") {
+		if resp.MaintenanceWindowStartTime != nil {
+			f10 := &svcapitypes.WeeklyStartTime{}
+			if resp.MaintenanceWindowStartTime.DayOfWeek != "" {
+				f10.DayOfWeek = aws.String(string(resp.MaintenanceWindowStartTime.DayOfWeek))
+			}
+			if resp.MaintenanceWindowStartTime.TimeOfDay != nil {
+				f10.TimeOfDay = resp.MaintenanceWindowStartTime.TimeOfDay
+			}
+			if resp.MaintenanceWindowStartTime.TimeZone != nil {
+				f10.TimeZone = resp.MaintenanceWindowStartTime.TimeZone
+			}
+			ko.Spec.MaintenanceWindowStartTime = f10
+		} else {
+			ko.Spec.MaintenanceWindowStartTime = nil
 		}
-		if resp.Logs.General != nil {
-			f9.General = resp.Logs.General
-		}
-		ko.Spec.Logs = f9
-	} else {
-		ko.Spec.Logs = nil
 	}
-	if resp.MaintenanceWindowStartTime != nil {
-		f10 := &svcapitypes.WeeklyStartTime{}
-		if resp.MaintenanceWindowStartTime.DayOfWeek != "" {
-			f10.DayOfWeek = aws.String(string(resp.MaintenanceWindowStartTime.DayOfWeek))
+	if delta.DifferentAt("Spec.SecurityGroups") {
+		if resp.SecurityGroups != nil {
+			ko.Spec.SecurityGroups = aws.StringSlice(resp.SecurityGroups)
+		} else {
+			ko.Spec.SecurityGroups = nil
 		}
-		if resp.MaintenanceWindowStartTime.TimeOfDay != nil {
-			f10.TimeOfDay = resp.MaintenanceWindowStartTime.TimeOfDay
-		}
-		if resp.MaintenanceWindowStartTime.TimeZone != nil {
-			f10.TimeZone = resp.MaintenanceWindowStartTime.TimeZone
-		}
-		ko.Spec.MaintenanceWindowStartTime = f10
-	} else {
-		ko.Spec.MaintenanceWindowStartTime = nil
-	}
-	if resp.SecurityGroups != nil {
-		ko.Spec.SecurityGroups = aws.StringSlice(resp.SecurityGroups)
-	} else {
-		ko.Spec.SecurityGroups = nil
 	}
 
 	rm.setStatusDefaults(ko)
@@ -678,98 +689,116 @@ func (rm *resourceManager) newUpdateRequestPayload(
 ) (*svcsdk.UpdateBrokerInput, error) {
 	res := &svcsdk.UpdateBrokerInput{}
 
-	if r.ko.Spec.AuthenticationStrategy != nil {
-		res.AuthenticationStrategy = svcsdktypes.AuthenticationStrategy(*r.ko.Spec.AuthenticationStrategy)
+	if delta.DifferentAt("Spec.AuthenticationStrategy") {
+		if r.ko.Spec.AuthenticationStrategy != nil {
+			res.AuthenticationStrategy = svcsdktypes.AuthenticationStrategy(*r.ko.Spec.AuthenticationStrategy)
+		}
 	}
-	if r.ko.Spec.AutoMinorVersionUpgrade != nil {
-		res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
+	if delta.DifferentAt("Spec.AutoMinorVersionUpgrade") {
+		if r.ko.Spec.AutoMinorVersionUpgrade != nil {
+			res.AutoMinorVersionUpgrade = r.ko.Spec.AutoMinorVersionUpgrade
+		}
 	}
 	if r.ko.Status.BrokerID != nil {
 		res.BrokerId = r.ko.Status.BrokerID
 	}
-	if r.ko.Spec.Configuration != nil {
-		f3 := &svcsdktypes.ConfigurationId{}
-		if r.ko.Spec.Configuration.ID != nil {
-			f3.Id = r.ko.Spec.Configuration.ID
-		}
-		if r.ko.Spec.Configuration.Revision != nil {
-			revisionCopy0 := *r.ko.Spec.Configuration.Revision
-			if revisionCopy0 > math.MaxInt32 || revisionCopy0 < math.MinInt32 {
-				return nil, fmt.Errorf("error: field Revision is of type int32")
+	if delta.DifferentAt("Spec.Configuration") {
+		if r.ko.Spec.Configuration != nil {
+			f3 := &svcsdktypes.ConfigurationId{}
+			if r.ko.Spec.Configuration.ID != nil {
+				f3.Id = r.ko.Spec.Configuration.ID
 			}
-			revisionCopy := int32(revisionCopy0)
-			f3.Revision = &revisionCopy
+			if r.ko.Spec.Configuration.Revision != nil {
+				revisionCopy0 := *r.ko.Spec.Configuration.Revision
+				if revisionCopy0 > math.MaxInt32 || revisionCopy0 < math.MinInt32 {
+					return nil, fmt.Errorf("error: field Revision is of type int32")
+				}
+				revisionCopy := int32(revisionCopy0)
+				f3.Revision = &revisionCopy
+			}
+			res.Configuration = f3
 		}
-		res.Configuration = f3
 	}
-	if r.ko.Spec.EngineVersion != nil {
-		res.EngineVersion = r.ko.Spec.EngineVersion
+	if delta.DifferentAt("Spec.EngineVersion") {
+		if r.ko.Spec.EngineVersion != nil {
+			res.EngineVersion = r.ko.Spec.EngineVersion
+		}
 	}
-	if r.ko.Spec.HostInstanceType != nil {
-		res.HostInstanceType = r.ko.Spec.HostInstanceType
+	if delta.DifferentAt("Spec.HostInstanceType") {
+		if r.ko.Spec.HostInstanceType != nil {
+			res.HostInstanceType = r.ko.Spec.HostInstanceType
+		}
 	}
-	if r.ko.Spec.LDAPServerMetadata != nil {
-		f7 := &svcsdktypes.LdapServerMetadataInput{}
-		if r.ko.Spec.LDAPServerMetadata.Hosts != nil {
-			f7.Hosts = aws.ToStringSlice(r.ko.Spec.LDAPServerMetadata.Hosts)
+	if delta.DifferentAt("Spec.LDAPServerMetadata") {
+		if r.ko.Spec.LDAPServerMetadata != nil {
+			f7 := &svcsdktypes.LdapServerMetadataInput{}
+			if r.ko.Spec.LDAPServerMetadata.Hosts != nil {
+				f7.Hosts = aws.ToStringSlice(r.ko.Spec.LDAPServerMetadata.Hosts)
+			}
+			if r.ko.Spec.LDAPServerMetadata.RoleBase != nil {
+				f7.RoleBase = r.ko.Spec.LDAPServerMetadata.RoleBase
+			}
+			if r.ko.Spec.LDAPServerMetadata.RoleName != nil {
+				f7.RoleName = r.ko.Spec.LDAPServerMetadata.RoleName
+			}
+			if r.ko.Spec.LDAPServerMetadata.RoleSearchMatching != nil {
+				f7.RoleSearchMatching = r.ko.Spec.LDAPServerMetadata.RoleSearchMatching
+			}
+			if r.ko.Spec.LDAPServerMetadata.RoleSearchSubtree != nil {
+				f7.RoleSearchSubtree = r.ko.Spec.LDAPServerMetadata.RoleSearchSubtree
+			}
+			if r.ko.Spec.LDAPServerMetadata.ServiceAccountPassword != nil {
+				f7.ServiceAccountPassword = r.ko.Spec.LDAPServerMetadata.ServiceAccountPassword
+			}
+			if r.ko.Spec.LDAPServerMetadata.ServiceAccountUsername != nil {
+				f7.ServiceAccountUsername = r.ko.Spec.LDAPServerMetadata.ServiceAccountUsername
+			}
+			if r.ko.Spec.LDAPServerMetadata.UserBase != nil {
+				f7.UserBase = r.ko.Spec.LDAPServerMetadata.UserBase
+			}
+			if r.ko.Spec.LDAPServerMetadata.UserRoleName != nil {
+				f7.UserRoleName = r.ko.Spec.LDAPServerMetadata.UserRoleName
+			}
+			if r.ko.Spec.LDAPServerMetadata.UserSearchMatching != nil {
+				f7.UserSearchMatching = r.ko.Spec.LDAPServerMetadata.UserSearchMatching
+			}
+			if r.ko.Spec.LDAPServerMetadata.UserSearchSubtree != nil {
+				f7.UserSearchSubtree = r.ko.Spec.LDAPServerMetadata.UserSearchSubtree
+			}
+			res.LdapServerMetadata = f7
 		}
-		if r.ko.Spec.LDAPServerMetadata.RoleBase != nil {
-			f7.RoleBase = r.ko.Spec.LDAPServerMetadata.RoleBase
-		}
-		if r.ko.Spec.LDAPServerMetadata.RoleName != nil {
-			f7.RoleName = r.ko.Spec.LDAPServerMetadata.RoleName
-		}
-		if r.ko.Spec.LDAPServerMetadata.RoleSearchMatching != nil {
-			f7.RoleSearchMatching = r.ko.Spec.LDAPServerMetadata.RoleSearchMatching
-		}
-		if r.ko.Spec.LDAPServerMetadata.RoleSearchSubtree != nil {
-			f7.RoleSearchSubtree = r.ko.Spec.LDAPServerMetadata.RoleSearchSubtree
-		}
-		if r.ko.Spec.LDAPServerMetadata.ServiceAccountPassword != nil {
-			f7.ServiceAccountPassword = r.ko.Spec.LDAPServerMetadata.ServiceAccountPassword
-		}
-		if r.ko.Spec.LDAPServerMetadata.ServiceAccountUsername != nil {
-			f7.ServiceAccountUsername = r.ko.Spec.LDAPServerMetadata.ServiceAccountUsername
-		}
-		if r.ko.Spec.LDAPServerMetadata.UserBase != nil {
-			f7.UserBase = r.ko.Spec.LDAPServerMetadata.UserBase
-		}
-		if r.ko.Spec.LDAPServerMetadata.UserRoleName != nil {
-			f7.UserRoleName = r.ko.Spec.LDAPServerMetadata.UserRoleName
-		}
-		if r.ko.Spec.LDAPServerMetadata.UserSearchMatching != nil {
-			f7.UserSearchMatching = r.ko.Spec.LDAPServerMetadata.UserSearchMatching
-		}
-		if r.ko.Spec.LDAPServerMetadata.UserSearchSubtree != nil {
-			f7.UserSearchSubtree = r.ko.Spec.LDAPServerMetadata.UserSearchSubtree
-		}
-		res.LdapServerMetadata = f7
 	}
-	if r.ko.Spec.Logs != nil {
-		f8 := &svcsdktypes.Logs{}
-		if r.ko.Spec.Logs.Audit != nil {
-			f8.Audit = r.ko.Spec.Logs.Audit
+	if delta.DifferentAt("Spec.Logs") {
+		if r.ko.Spec.Logs != nil {
+			f8 := &svcsdktypes.Logs{}
+			if r.ko.Spec.Logs.Audit != nil {
+				f8.Audit = r.ko.Spec.Logs.Audit
+			}
+			if r.ko.Spec.Logs.General != nil {
+				f8.General = r.ko.Spec.Logs.General
+			}
+			res.Logs = f8
 		}
-		if r.ko.Spec.Logs.General != nil {
-			f8.General = r.ko.Spec.Logs.General
-		}
-		res.Logs = f8
 	}
-	if r.ko.Spec.MaintenanceWindowStartTime != nil {
-		f9 := &svcsdktypes.WeeklyStartTime{}
-		if r.ko.Spec.MaintenanceWindowStartTime.DayOfWeek != nil {
-			f9.DayOfWeek = svcsdktypes.DayOfWeek(*r.ko.Spec.MaintenanceWindowStartTime.DayOfWeek)
+	if delta.DifferentAt("Spec.MaintenanceWindowStartTime") {
+		if r.ko.Spec.MaintenanceWindowStartTime != nil {
+			f9 := &svcsdktypes.WeeklyStartTime{}
+			if r.ko.Spec.MaintenanceWindowStartTime.DayOfWeek != nil {
+				f9.DayOfWeek = svcsdktypes.DayOfWeek(*r.ko.Spec.MaintenanceWindowStartTime.DayOfWeek)
+			}
+			if r.ko.Spec.MaintenanceWindowStartTime.TimeOfDay != nil {
+				f9.TimeOfDay = r.ko.Spec.MaintenanceWindowStartTime.TimeOfDay
+			}
+			if r.ko.Spec.MaintenanceWindowStartTime.TimeZone != nil {
+				f9.TimeZone = r.ko.Spec.MaintenanceWindowStartTime.TimeZone
+			}
+			res.MaintenanceWindowStartTime = f9
 		}
-		if r.ko.Spec.MaintenanceWindowStartTime.TimeOfDay != nil {
-			f9.TimeOfDay = r.ko.Spec.MaintenanceWindowStartTime.TimeOfDay
-		}
-		if r.ko.Spec.MaintenanceWindowStartTime.TimeZone != nil {
-			f9.TimeZone = r.ko.Spec.MaintenanceWindowStartTime.TimeZone
-		}
-		res.MaintenanceWindowStartTime = f9
 	}
-	if r.ko.Spec.SecurityGroups != nil {
-		res.SecurityGroups = aws.ToStringSlice(r.ko.Spec.SecurityGroups)
+	if delta.DifferentAt("Spec.SecurityGroups") {
+		if r.ko.Spec.SecurityGroups != nil {
+			res.SecurityGroups = aws.ToStringSlice(r.ko.Spec.SecurityGroups)
+		}
 	}
 
 	return res, nil

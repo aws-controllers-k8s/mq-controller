@@ -23,6 +23,7 @@ from typing import Dict
 
 from acktest.resources import random_suffix_name
 from acktest.k8s import resource as k8s
+from acktest.k8s import condition
 
 from e2e.bootstrap_resources import get_bootstrap_resources
 from e2e import service_marker, CRD_GROUP, CRD_VERSION, load_mq_resource
@@ -36,6 +37,8 @@ DELETE_WAIT_AFTER_SECONDS = 120
 # longer appearing in the AMQ API...
 DELETE_TIMEOUT_SECONDS = 300
 
+UPDATE_WAITE_INTERVAL_SLEEP_SECONDS = 20
+
 CREATE_INTERVAL_SLEEP_SECONDS = 30
 # Time to wait before we get to an expected RUNNING state.
 # In my experience, it regularly takes more than 6 minutes to create a
@@ -46,6 +49,23 @@ CREATE_TIMEOUT_SECONDS = 900
 @pytest.fixture(scope="module")
 def amq_client():
     return boto3.client('mq')
+
+def wait_till_deleted(broker_id: str):
+    amq_client = boto3.client('mq')
+    now = datetime.datetime.now()
+    timeout = now + datetime.timedelta(seconds=DELETE_TIMEOUT_SECONDS)
+
+    while True:
+        if datetime.datetime.now() >= timeout:
+            pytest.fail("Timed out waiting for ES Domain to being deleted in AES API")
+        time.sleep(DELETE_WAIT_INTERVAL_SLEEP_SECONDS)
+
+        try:
+            aws_res = amq_client.describe_broker(BrokerId=broker_id)
+            if aws_res['BrokerState'] != "DELETION_IN_PROGRESS":
+                pytest.fail("BrokerState is not DELETION_IN_PROGRESS for broker that was deleted. BrokerState is "+aws_res['BrokerState'])
+        except amq_client.exceptions.NotFoundException:
+            break
 
 
 #TODO(a-hilaly): Move to test-infra
@@ -78,48 +98,139 @@ def wait_for_cr_status(
 @pytest.fixture(scope="module")
 def admin_user_pass_secret():
     ns = "default"
-    name = "dbsecrets"
+    name = random_suffix_name("dbsecrets", 24)
     key = "admin_user_password"
     secret_val = "adminpassneeds12chars"
     k8s.create_opaque_secret(ns, name, key, secret_val)
     yield ns, name, key
     k8s.delete_secret(ns, name)
 
+@pytest.fixture(scope="module")
+def test_broker_nonpublic(admin_user_pass_secret):
+    resource_name = random_suffix_name("my-rabbit-broker-non-public", 32)
+    aup_sec_ns, aup_sec_name, aup_sec_key = admin_user_pass_secret
+
+    replacements = REPLACEMENT_VALUES.copy()
+    replacements["BROKER_NAME"] = resource_name
+    replacements["ADMIN_USER_PASS_SECRET_NAMESPACE"] = aup_sec_ns
+    replacements["ADMIN_USER_PASS_SECRET_NAME"] = aup_sec_name
+    replacements["ADMIN_USER_PASS_SECRET_KEY"] = aup_sec_key
+
+    resource_data = load_mq_resource(
+        "broker_rabbitmq_non_public",
+        additional_replacements=replacements,
+    )
+    logging.error(resource_data)
+
+    # Create the k8s resource
+    ref = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
+        resource_name, namespace="default",
+    )
+    k8s.create_custom_resource(ref, resource_data)
+    cr = k8s.wait_resource_consumed_by_controller(ref)
+
+    assert cr is not None
+
+    broker_id = cr['status']['brokerID']
+
+    yield ref, cr, broker_id
+
+    try:
+        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
+        assert deleted
+        time.sleep(DELETE_WAIT_AFTER_SECONDS)
+    except:
+        pass
+
+    wait_till_deleted(broker_id)
+
+@pytest.fixture(scope="module")
+def test_broker_with_security_group(admin_user_pass_secret):
+    resource_name = random_suffix_name("rabbitmq-security-group", 32)
+    aup_sec_ns, aup_sec_name, aup_sec_key = admin_user_pass_secret
+    broker_vpc = get_bootstrap_resources().BrokerVpc
+    subnet_id = broker_vpc.private_subnets.subnet_ids[0]
+    security_group_id = broker_vpc.security_group.group_id
+
+
+    replacements = REPLACEMENT_VALUES.copy()
+    replacements["BROKER_NAME"] = resource_name
+    replacements["ADMIN_USER_PASS_SECRET_NAMESPACE"] = aup_sec_ns
+    replacements["ADMIN_USER_PASS_SECRET_NAME"] = aup_sec_name
+    replacements["ADMIN_USER_PASS_SECRET_KEY"] = aup_sec_key
+    replacements["SUBNET_ID"] = subnet_id
+    replacements["SECURITY_GROUP_ID"] = security_group_id
+
+    resource_data = load_mq_resource(
+        "broker_rabbitmq_security_group",
+        additional_replacements=replacements,
+    )
+    logging.error(resource_data)
+
+    # Create the k8s resource
+    ref = k8s.CustomResourceReference(
+        CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
+        resource_name, namespace="default",
+    )
+    k8s.create_custom_resource(ref, resource_data)
+    cr = k8s.wait_resource_consumed_by_controller(ref)
+
+
+    assert cr is not None
+    broker_id = cr['status']['brokerID']
+
+    yield ref, cr, broker_id, security_group_id
+
+    try:
+        _, deleted = k8s.delete_custom_resource(ref, 3, 10)
+        assert deleted
+        time.sleep(DELETE_WAIT_AFTER_SECONDS)
+    except:
+        pass
+
+    wait_till_deleted(broker_id)
+
+    
+
 
 @service_marker
 @pytest.mark.canary
 class TestRabbitMQBroker:
-    def test_create_delete_non_public(
+    def test_rabbitmq_nondefault_security_group(self, amq_client, test_broker_with_security_group):
+        ref, cr, broker_id, security_group_id = test_broker_with_security_group
+        # Let's check that the Broker appears in AmazonMQ
+        aws_res = amq_client.describe_broker(BrokerId=broker_id)
+        assert aws_res is not None
+
+        wait_for_cr_status(
+            ref,
+            "brokerState",
+            "RUNNING",
+            CREATE_INTERVAL_SLEEP_SECONDS,
+            45,
+        )
+
+        # Verify that the ACK resource has successfully synced
+        condition.assert_synced(ref)
+
+        latest_res = k8s.get_resource(ref)
+        assert len(latest_res['spec']['securityGroups']) == 1
+        assert latest_res['spec']['securityGroups'][0] == security_group_id
+
+        broker = amq_client.describe_broker(BrokerId=broker_id)
+        assert broker['SecurityGroups'] is not None
+        assert len(broker['SecurityGroups']) == 1
+        assert broker['SecurityGroups'][0] == security_group_id
+
+
+
+    def test_crud_non_public(
             self,
             amq_client,
-            admin_user_pass_secret,
+            test_broker_nonpublic,
     ):
-        resource_name = random_suffix_name("my-rabbit-broker-non-public", 32)
-        aup_sec_ns, aup_sec_name, aup_sec_key = admin_user_pass_secret
-
-        replacements = REPLACEMENT_VALUES.copy()
-        replacements["BROKER_NAME"] = resource_name
-        replacements["ADMIN_USER_PASS_SECRET_NAMESPACE"] = aup_sec_ns
-        replacements["ADMIN_USER_PASS_SECRET_NAME"] = aup_sec_name
-        replacements["ADMIN_USER_PASS_SECRET_KEY"] = aup_sec_key
-
-        resource_data = load_mq_resource(
-            "broker_rabbitmq_non_public",
-            additional_replacements=replacements,
-        )
-        logging.error(resource_data)
-
-        # Create the k8s resource
-        ref = k8s.CustomResourceReference(
-            CRD_GROUP, CRD_VERSION, RESOURCE_PLURAL,
-            resource_name, namespace="default",
-        )
-        k8s.create_custom_resource(ref, resource_data)
-        cr = k8s.wait_resource_consumed_by_controller(ref)
-
-        assert cr is not None
-
-        broker_id = cr['status']['brokerID']
+        ref, cr, broker_id = test_broker_nonpublic
 
         # Let's check that the Broker appears in AmazonMQ
         aws_res = amq_client.describe_broker(BrokerId=broker_id)
@@ -133,6 +244,10 @@ class TestRabbitMQBroker:
             45,
         )
 
+        # Verify that the ACK resource has successfully synced
+        condition.assert_synced(ref)
+
+
         # At this point, there should be at least one BrokerInstance record in
         # the Broker.Status.BrokerInstances collection which we can grab an
         # endpoint from.
@@ -141,23 +256,49 @@ class TestRabbitMQBroker:
         assert len(latest_res['status']['brokerInstances']) == 1
         assert len(latest_res['status']['brokerInstances'][0]['endpoints']) > 0
 
-        # Delete the k8s resource on teardown of the module
-        k8s.delete_custom_resource(ref)
+        assert latest_res["spec"]["maintenanceWindowStartTime"] is not None
+        assert latest_res["spec"]["maintenanceWindowStartTime"]["dayOfWeek"] == "MONDAY"
+        assert latest_res["spec"]["maintenanceWindowStartTime"]["timeOfDay"] == "22:00"
+        assert latest_res["spec"]["maintenanceWindowStartTime"]["timeZone"] == "UTC"
 
-        time.sleep(DELETE_WAIT_AFTER_SECONDS)
 
-        now = datetime.datetime.now()
-        timeout = now + datetime.timedelta(seconds=DELETE_TIMEOUT_SECONDS)
+        # Update the broker's maintenance window
+        maintenance_window_patch = {
+            "spec": {
+                "maintenanceWindowStartTime": {
+                    "dayOfWeek": "TUESDAY",
+                    "timeOfDay": "02:00",
+                    "timeZone": "UTC",
+                }
+            }
+        }
 
-        # Broker should no longer appear in AmazonMQ
-        while True:
-            if datetime.datetime.now() >= timeout:
-                pytest.fail("Timed out waiting for ES Domain to being deleted in AES API")
-            time.sleep(DELETE_WAIT_INTERVAL_SLEEP_SECONDS)
+        k8s.patch_custom_resource(ref, maintenance_window_patch)
+        time.sleep(UPDATE_WAITE_INTERVAL_SLEEP_SECONDS)
 
-            try:
-                aws_res = amq_client.describe_broker(BrokerId=broker_id)
-                if aws_res['BrokerState'] != "DELETION_IN_PROGRESS":
-                    pytest.fail("BrokerState is not DELETION_IN_PROGRESS for broker that was deleted. BrokerState is "+aws_res['BrokerState'])
-            except amq_client.exceptions.NotFoundException:
-                break
+        assert k8s.wait_on_condition(ref, "ACK.ResourceSynced", "True", wait_periods=5)
+
+        updated_res = k8s.get_resource(ref)
+        assert updated_res["spec"]["maintenanceWindowStartTime"] is not None
+        assert updated_res["spec"]["maintenanceWindowStartTime"]["dayOfWeek"] == "TUESDAY"
+        assert updated_res["spec"]["maintenanceWindowStartTime"]["timeOfDay"] == "02:00"
+        assert updated_res["spec"]["maintenanceWindowStartTime"]["timeZone"] == "UTC"
+
+        updated_broker = amq_client.describe_broker(BrokerId=broker_id)
+        assert updated_broker['MaintenanceWindowStartTime'] is not None
+        assert updated_broker['MaintenanceWindowStartTime']['DayOfWeek'] == "TUESDAY"
+        assert updated_broker['MaintenanceWindowStartTime']['TimeOfDay'] == "02:00"
+        assert updated_broker['MaintenanceWindowStartTime']['TimeZone'] == "UTC"
+
+        # Double check that other spec fields have not being set to nil.
+        assert updated_res["spec"]["deploymentMode"] == "SINGLE_INSTANCE"
+
+
+
+
+
+
+
+
+
+

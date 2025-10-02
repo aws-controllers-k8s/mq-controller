@@ -17,18 +17,27 @@ resources:
         template_path: hooks/sdk_read_one_post_set_output.go.tpl
       sdk_update_pre_set_output:
         template_path: hooks/sdk_update_pre_set_output.go.tpl
+      delta_pre_compare:
+        template_path: hooks/delta_pre_compare.go.tpl
     renames:
       operations:
         CreateBroker:
           input_fields:
             BrokerName: Name
+
+    update_operation:
+      omit_unchanged_fields: true
+      # UpdateBroker API returns nil for values not set in the request.
+      only_set_unchanged_fields: true
     fields:
-      securityGroups:
+      SecurityGroups:
+        late_initialize: {}
         references:
           service_name: ec2
           resource: SecurityGroup
           path: Status.ID
       SubnetIDs:
+        late_initialize: {}
         references:
           service_name: ec2
           resource: Subnet
@@ -54,3 +63,27 @@ resources:
           is_ignored: true
       Users.Password:
         is_secret: true
+      AuthenticationStrategy:
+        late_initialize: {}
+      AutoMinorVersionUpgrade:
+        late_initialize: {}
+      EngineVersion:
+        late_initialize: {}
+        set:
+          - method: Update
+            ignore: true
+      MaintenanceWindowStartTime:
+        late_initialize: {}
+      EncryptionOptions:
+        late_initialize: {}
+      StorageType:
+        late_initialize: {}
+      PubliclyAccessible:
+        late_initialize: {}
+      Logs:
+        late_initialize: {}
+      LDAPServerMetadata:
+        late_initialize: {
+          # LDAP Server Metadata is only available for ActiveMQ brokers
+          skip_incomplete_check: {}
+        }
