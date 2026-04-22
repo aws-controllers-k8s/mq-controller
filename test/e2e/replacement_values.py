@@ -16,5 +16,5 @@ AmazonMQ-specific test variables.
 
 REPLACEMENT_VALUES = {
     "MQ_RABBITMQ_ENGINE_VERSION": "3.13",
-    "MQ_HOST_INSTANCE_TYPE": "mq.t3.micro",
+    "MQ_HOST_INSTANCE_TYPE": "mq.m7g.medium",
 }
