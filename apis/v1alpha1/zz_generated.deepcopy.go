@@ -710,6 +710,11 @@ func (in *EncryptionOptions) DeepCopyInto(out *EncryptionOptions) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.KMSKeyRef != nil {
+		in, out := &in.KMSKeyRef, &out.KMSKeyRef
+		*out = new(corev1alpha1.AWSResourceReferenceWrapper)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.UseAWSOwnedKey != nil {
 		in, out := &in.UseAWSOwnedKey, &out.UseAWSOwnedKey
 		*out = new(bool)
