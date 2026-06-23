@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/aws-controllers-k8s/ec2-controller v0.0.21
+	github.com/aws-controllers-k8s/kms-controller v1.3.2
 	github.com/aws-controllers-k8s/runtime v0.60.0
 	github.com/aws/aws-sdk-go v1.49.0
 	github.com/aws/aws-sdk-go-v2 v1.34.0

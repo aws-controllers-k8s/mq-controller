@@ -133,8 +133,10 @@ type DataReplicationMetadataOutput struct {
 
 // Encryption options for the broker.
 type EncryptionOptions struct {
-	KMSKeyID       *string `json:"kmsKeyID,omitempty"`
-	UseAWSOwnedKey *bool   `json:"useAWSOwnedKey,omitempty"`
+	KMSKeyID *string `json:"kmsKeyID,omitempty"`
+	// Reference field for KMSKeyID
+	KMSKeyRef      *ackv1alpha1.AWSResourceReferenceWrapper `json:"kmsKeyRef,omitempty"`
+	UseAWSOwnedKey *bool                                    `json:"useAWSOwnedKey,omitempty"`
 }
 
 // Id of the engine version.

@@ -76,6 +76,11 @@ resources:
         late_initialize: {}
       EncryptionOptions:
         late_initialize: {}
+      EncryptionOptions.KMSKeyID:
+        references:
+          service_name: kms
+          resource: Key
+          path: Status.ACKResourceMetadata.ARN
       StorageType:
         late_initialize: {}
       PubliclyAccessible:
