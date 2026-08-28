@@ -23,7 +23,6 @@ License version 2.0, we include the full text of the package's License below.
 * `github.com/aws-controllers-k8s/ec2-controller`
 * `github.com/aws-controllers-k8s/kms-controller`
 * `github.com/aws-controllers-k8s/runtime`
-* `github.com/aws/aws-sdk-go`
 * `github.com/aws/aws-sdk-go-v2`
 * `github.com/aws/aws-sdk-go-v2/service/mq`
 * `github.com/aws/smithy-go`
@@ -1369,9 +1368,7 @@ Subdependencies:
 
 License Identifier: Apache-2.0
 
-#### github.com/aws/aws-sdk-go
 
-License Identifier: Apache-2.0
 
 #### github.com/aws/aws-sdk-go-v2
 
@@ -2160,8 +2157,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
 
 
 
